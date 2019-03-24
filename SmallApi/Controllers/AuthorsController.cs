@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 using SmallApi.Contexts;
 using SmallApi.Entities;
@@ -26,10 +27,17 @@ namespace SmallApi.Controllers
             return context.Authors.Include(x => x.Books).ToList();
         }
 
-        [HttpGet("{id}", Name = "GetAuthor")]
-        public ActionResult<Author> Get(int id)
+        [HttpGet("first")]
+        public ActionResult<Author> GetFirstAuthor()
         {
-            var author = context.Authors.Include(x => x.Books).FirstOrDefault(x => x.Id == id);
+            return context.Authors.FirstOrDefault();
+        }
+
+        //Get api/authors/5 o api/authors/5/unnombre
+        [HttpGet("{id}", Name = "GetAuthor")]
+        public async Task<ActionResult<Author>> Get(int id, [BindRequired] string param2)
+        {
+            var author = await context.Authors.Include(x => x.Books).FirstOrDefaultAsync(x => x.Id == id);
             if(author == null)
             {
                 return NotFound();
@@ -41,6 +49,7 @@ namespace SmallApi.Controllers
         [HttpPost]
         public ActionResult Post([FromBody] Author author)
         {
+            TryValidateModel(author);
             context.Authors.Add(author);
             context.SaveChanges();
             return new CreatedAtRouteResult("GetAuthor", new { id = author.Id}, author);
